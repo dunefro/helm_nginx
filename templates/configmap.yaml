@@ -1,0 +1,45 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-configuration
+  namespace: default
+  labels:
+    app.kubernetes.io/name: {{ .Values.metadata.labels.name }}
+    app.kubernetes.io/part-of: {{ .Values.metadata.labels.partof }}
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: tcp-services
+  namespace: default
+  labels:
+    app.kubernetes.io/name: {{ .Values.metadata.labels.name }}
+    app.kubernetes.io/part-of: {{ .Values.metadata.labels.partof }}
+
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: udp-services
+  namespace: default
+  labels:
+    app.kubernetes.io/name: {{ .Values.metadata.labels.name }}
+    app.kubernetes.io/part-of: {{ .Values.metadata.labels.partof }}
+ 
+---
+# This is used so as to run the nginx pod as an admin pod
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: ingress-nginx
+subjects:
+  - kind: ServiceAccount
+    # Reference to upper's `metadata.name`
+    name: default
+    # Reference to upper's `metadata.namespace`
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io

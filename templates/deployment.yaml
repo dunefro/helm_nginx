@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.metadata.name}}
+  namespace: default
+  labels:
+    app.kubernetes.io/name: {{ .Values.metadata.labels.name }}
+    app.kubernetes.io/part-of: {{ .Values.metadata.labels.partof }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.metadata.labels.name }}
+      app.kubernetes.io/part-of: {{ .Values.metadata.labels.partof }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.metadata.labels.name }}
+        app.kubernetes.io/part-of: {{ .Values.metadata.labels.partof }}
+      annotations:
+        prometheus.io/port: {{ quote .Values.prometheus.port }}
+        prometheus.io/scrape: {{ quote .Values.prometheus.scrape }}
+    spec:
+      # wait up to five minutes for the drain of connections
+      terminationGracePeriodSeconds: {{ .Values.terminationperiod }}
+      # serviceAccountName: {{ .Values.serviceaccount.name }}
+      nodeSelector:
+        kubernetes.io/os: {{ .Values.nodeSelector.os }}
+      containers:
+        - name: {{ .Values.container.name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag}}"
+          args: 
+            {{- range .Values.container.args }}
+            - {{ . | quote}}
+            {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: {{ .Values.container.privilege }}
+            capabilities:
+              drop: {{ .Values.container.drop }}
+              add: {{ .Values.container.add }}
+            # www-data -> 33
+            runAsUser: {{ .Values.container.user }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          ports:
+            - name: http
+              containerPort: {{ .Values.container.ports.name.http }}
+              protocol: {{ .Values.container.ports.protocol }}
+            - name: https
+              containerPort: {{ .Values.container.ports.name.https }}
+              protocol: {{ .Values.container.ports.protocol }}
+          livenessProbe:
+            failureThreshold: {{ .Values.container.liveness.failurethreshold }}
+            httpGet:
+              path: {{ .Values.container.liveness.httpGet.path }}
+              port: {{ .Values.container.liveness.httpGet.port }}
+              scheme: {{ .Values.container.liveness.httpGet.scheme }}
+            initialDelaySeconds: {{ .Values.container.liveness.initialdelay }}
+            periodSeconds: {{ .Values.container.liveness.period }}
+            successThreshold: {{ .Values.container.liveness.successthreshold }}
+            timeoutSeconds: {{ .Values.container.liveness.timeout }}
+          readinessProbe:
+            failureThreshold: {{ .Values.container.liveness.failurethreshold }}
+            httpGet:
+              path: {{ .Values.container.readiness.httpGet.path }}
+              port: {{ .Values.container.readiness.httpGet.port }}
+              scheme: {{ .Values.container.readiness.httpGet.scheme }}
+            periodSeconds: {{ .Values.container.readiness.period }}
+            successThreshold: {{ .Values.container.readiness.successthreshold }}
+            timeoutSeconds: {{ .Values.container.readiness.timeout }}
+          lifecycle:
+            preStop:
+              exec:
+                command: 
+                {{- range .Values.container.command }}
+                 - {{ . }}
+                {{- end }}
+

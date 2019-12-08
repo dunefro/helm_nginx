@@ -1,0 +1,2 @@
+--set has a higher precedence than the default values.yaml file, our template
+Template functions follow the syntax functionName arg1 arg2.... In the snippet above, quote .Values.favorite.drink calls the quote function and passes it a single argument.
